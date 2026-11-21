@@ -132,8 +132,17 @@ document.addEventListener('visibilitychange', () => {
 setInterval(broadcastState, 5000);
 
 // ---------- Actions ----------
+/** Joueurs inscrits ET connectés en ce moment. */
+const connectedCount = () => [...online].filter((id) => state.players[id]).length;
+function canStart() {
+  if (connectedCount() > 0) return true;
+  toast('Il faut au moins un joueur connecté 🙂');
+  return false;
+}
+
 const actions = {
   next() {
+    if (!canStart()) return;
     commit(G.nextQuestion(state, now()), { undo: true });
     if (state.q.phase === 'open') {
       FX.play('go');
@@ -141,6 +150,7 @@ const actions = {
     }
   },
   top() {
+    if (!canStart()) return;
     commit(G.top(state, now()), { undo: true });
     if (state.q.phase === 'open') {
       FX.play('go');
@@ -270,6 +280,9 @@ $('#setForm').addEventListener('change', (e) => {
 function stageHtml() {
   const q = state.q;
   const players = Object.keys(state.players).length;
+  const live = connectedCount();
+  const dis = live ? '' : 'disabled';
+  const waitMsg = live ? '' : '<p class="muted">⏳ En attente d’au moins un joueur connecté…</p>';
   if (state.podium) {
     return `${podiumHtml(state)}<div class="row"><button class="btn big" data-act="unpodium">↩️ Revenir au jeu</button><button class="btn ghost" data-act="reset">🔄 Nouvelle partie</button></div>`;
   }
@@ -278,11 +291,11 @@ function stageHtml() {
       return `<div class="lobby">
         <div class="qrbox small" data-act="qr">${qrSvg(joinUrl)}</div>
         <div><p class="big-txt">Code <b class="code">${room}</b></p>
-        <p class="muted">${players ? `${players} joueur${players > 1 ? 's' : ''} inscrit${players > 1 ? 's' : ''} 🎉` : 'Les joueurs scannent le QR code pour s’inscrire.'}</p></div></div>
-        <button class="btn big go" data-act="next">▶ Première question</button>`;
+        <p class="muted">${live ? `${live} joueur${live > 1 ? 's' : ''} connecté${live > 1 ? 's' : ''} 🎉` : 'Les joueurs scannent le QR code pour s’inscrire.'}</p></div></div>
+        ${waitMsg}<button class="btn big go" data-act="next" ${dis}>▶ Première question</button>`;
     case 'ready':
       return `<p class="phase">Question ${q.n}</p><p class="big-txt">📣 Lis ta question…</p>
-        <button class="btn huge go" data-act="top">🟢 TOP !</button>
+        ${waitMsg}<button class="btn huge go" data-act="top" ${dis}>🟢 TOP !</button>
         <button class="btn ghost" data-act="noone">⏭ Passer</button>`;
     case 'countdown':
       return `<p class="phase">Question ${q.n}</p><div class="countdown" id="cd">3</div>`;
@@ -291,7 +304,7 @@ function stageHtml() {
       if (h < 0) {
         const locked = q.locked.length;
         return `<p class="phase">Question ${q.n}</p><p class="big-txt">🔔 Buzzers ouverts</p>
-          <div class="timer" id="timer">0,0 s</div>
+          ${live ? '<div class="timer" id="timer">0,0 s</div>' : '<p class="big-txt muted">⏸ Plus aucun joueur connecté</p>'}
           ${locked ? `<p class="muted">${locked} joueur${locked > 1 ? 's' : ''} éliminé${locked > 1 ? 's' : ''} sur cette question</p>` : ''}
           <button class="btn ghost" data-act="noone">🤷 Personne ne trouve</button>`;
       }
@@ -309,7 +322,7 @@ function stageHtml() {
       const w = q.winner && state.players[q.winner];
       return `<p class="phase">Question ${q.n}</p>
         ${w ? `<div class="who win" style="--c:${esc(w.color)}">${avatarBubble(w, 'xl')}<div><div class="who-name">${esc(w.name)}</div><div class="who-time">+1 point · ${w.score} au total</div></div></div>` : '<p class="big-txt">🤷 Personne n’a trouvé</p>'}
-        <button class="btn huge go" data-act="next">▶ Question suivante</button>`;
+        ${waitMsg}<button class="btn huge go" data-act="next" ${dis}>▶ Question suivante</button>`;
     }
   }
   return '';
@@ -319,7 +332,7 @@ let lastStageKey = '';
 function render() {
   const q = state.q;
   // On ne reconstruit la zone principale que si elle change (évite de "manger" un appui).
-  const stageKey = JSON.stringify([state.podium, q.n, q.phase, q.queue.map((e) => [e.id, e.res]), q.frozen, q.winner, q.locked.length, Object.keys(state.players).length, state.players[q.winner]?.score]);
+  const stageKey = JSON.stringify([state.podium, q.n, q.phase, q.queue.map((e) => [e.id, e.res]), q.frozen, q.winner, q.locked.length, Object.keys(state.players).length, state.players[q.winner]?.score, connectedCount()]);
   if (stageKey !== lastStageKey) {
     $('#stage').innerHTML = stageHtml();
     $('#stage').dataset.phase = state.podium ? 'podium' : q.phase;
