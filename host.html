@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=7">
+  <link rel="stylesheet" href="css/style.css?v=9">
   <script src="js/vendor/supabase.js" defer></script>
   <script src="js/vendor/qrcode.js" defer></script>
-  <script type="module" src="js/host.js?v=6"></script>
+  <script type="module" src="js/host.js?v=9"></script>
 </head>
 <body class="host">
   <header class="topbar">
@@ -40,7 +40,8 @@
     </section>
 
     <section class="card">
-      <h3 class="sec-title">🏆 Classement</h3>
+      <div class="sec-head"><h3 class="sec-title">🏆 Classement</h3><button id="fixBtn" class="chip-btn" data-act="fix">✏️ Corriger</button></div>
+      <p id="fixHint" class="muted small" hidden>Corrige un score oublié ou validé par erreur, ou exclus un joueur parti (il pourra demander à revenir).</p>
       <ol id="board" class="list board"></ol>
     </section>
 

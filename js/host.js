@@ -259,6 +259,10 @@ document.addEventListener('click', (e) => {
     store.set('buzzer-group', b.dataset.g);
     return commit(G.setSettings(state, { group: b.dataset.g }));
   }
+  if (act === 'fix') {
+    fixing = !fixing;
+    return render();
+  }
   if (act === 'plus') return commit(G.adjustScore(state, id, 1), { undo: true });
   if (act === 'minus') return commit(G.adjustScore(state, id, -1), { undo: true });
   if (act === 'kick') {
@@ -509,6 +513,7 @@ function stageHtml() {
 }
 
 let lastStageKey = '';
+let fixing = false; // mode « Corriger » du classement (boutons −1 / +1 / Exclure)
 function render() {
   const q = state.q;
   // On ne reconstruit la zone principale que si elle change (évite de "manger" un appui).
@@ -524,7 +529,11 @@ function render() {
   $('#qTitle').textContent = phaseLabel(state);
   $('#queueCard').hidden = q.phase === 'lobby' || state.podium;
   flipRender($('#queue'), queueHtml(state, { empty: q.phase === 'open' ? 'Personne n’a encore buzzé…' : '—' }));
-  flipRender($('#board'), boardHtml(state, { online, host: true }));
+  flipRender($('#board'), boardHtml(state, { online, host: fixing }));
+  $('#board').classList.toggle('fixing', fixing);
+  $('#fixBtn').textContent = fixing ? '✅ Terminé' : '✏️ Corriger';
+  $('#fixBtn').hidden = !Object.keys(state.players).length;
+  $('#fixHint').hidden = !fixing;
   $('#undoBtn').disabled = !undoStack.length;
   $('#endBtn').disabled = !hasPlayed() || state.podium;
 }

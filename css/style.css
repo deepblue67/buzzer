@@ -185,9 +185,14 @@ em { font-style: normal; color: var(--muted); font-weight: 400; }
 .chip.ko { background: rgba(255, 59, 92, 0.3); }
 .chip.mic { background: var(--yellow); color: #3a2a00; font-weight: 600; animation: pop 0.9s ease-in-out infinite alternate; }
 .chip.wait { background: rgba(255, 214, 10, 0.2); }
-.ctl { display: flex; gap: 0.25rem; }
-.ctl button { width: 2em; height: 2em; border-radius: 10px; border: 0; background: rgba(255, 255, 255, 0.1); font-weight: 700; }
+.board.fixing li { flex-wrap: wrap; }
+.ctl { display: flex; gap: 0.35rem; flex-basis: 100%; padding-left: 2.2rem; }
+.ctl button { flex: 1; padding: 0.45em 0.3em; border-radius: 10px; border: 0; background: rgba(255, 255, 255, 0.1); font-weight: 600; font-size: 0.85rem; }
 .ctl .kick { color: #fda4af; }
+.sec-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.6rem; }
+.sec-head .sec-title { margin: 0; }
+.chip-btn { border: 1px solid var(--line); background: rgba(255, 255, 255, 0.06); border-radius: 999px; padding: 0.3em 0.8em; font-size: 0.85rem; font-weight: 600; }
+#fixHint { margin: -0.2rem 0 0.6rem; }
 .empty { color: var(--muted); text-align: center; padding: 0.8rem; }
 @keyframes pop { to { transform: scale(1.08); } }
 

@@ -61,7 +61,7 @@ export function boardHtml(state, { me = null, online = null, host = false } = {}
       const medal = p.score > 0 && p.rank <= 3 ? MEDALS[p.rank - 1] : `<span class="rk">${p.rank}</span>`;
       const streak = p.streak >= 2 ? `<span class="streak" title="Série en cours">🔥${p.streak}</span>` : '';
       const ctl = host
-        ? `<span class="ctl"><button data-act="minus" data-id="${esc(p.id)}" aria-label="Retirer un point">−</button><button data-act="plus" data-id="${esc(p.id)}" aria-label="Ajouter un point">+</button><button data-act="kick" data-id="${esc(p.id)}" class="kick" aria-label="Exclure">✕</button></span>`
+        ? `<span class="ctl"><button data-act="minus" data-id="${esc(p.id)}">−1 point</button><button data-act="plus" data-id="${esc(p.id)}">+1 point</button><button data-act="kick" data-id="${esc(p.id)}" class="kick">🚪 Exclure</button></span>`
         : '';
       return `<li data-key="${esc(p.id)}" class="brow ${p.id === me ? 'me' : ''} ${off ? 'off' : ''}" style="--c:${esc(p.color)}">
         <span class="medal">${medal}</span>${avatarBubble(p)}
