@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#140b2e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>BUZZ! · Joueur</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔔</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/vendor/supabase.js" defer></script>
+  <script type="module" src="js/play.js"></script>
+</head>
+<body class="play">
+  <header class="topbar">
+    <button id="editProfile" class="me-btn" title="Modifier mon profil">
+      <span id="meAv" class="av">🙂</span><span id="meName">…</span>
+    </button>
+    <span class="pill" title="Mon score">⭐ <b id="meScore">0</b></span>
+    <span class="pill" title="Mon classement">🏅 <b id="meRank">–</b></span>
+    <span class="code-chip small">🔑 <b id="roomCode"></b></span>
+    <span id="conn" class="conn"></span>
+  </header>
+  <div id="hostOff" class="banner warn" hidden>📴 Le maître du jeu est déconnecté… on l’attend.</div>
+
+  <main class="play-main">
+    <div class="status">
+      <div id="title" class="st-title">Connexion…</div>
+      <div id="sub" class="st-sub"></div>
+    </div>
+    <div class="buzz-zone">
+      <button id="buzzer" class="buzzer closed" aria-label="Buzzer"><span class="cap"><span id="buzzLabel">BUZZ</span></span></button>
+    </div>
+    <div class="tabs">
+      <button data-tab="queue" id="tabQueue">File</button>
+      <button data-tab="board" class="on">Classement</button>
+    </div>
+    <ol id="queue" class="list queue" hidden></ol>
+    <ol id="board" class="list board"></ol>
+  </main>
+
+  <div id="kicked" class="overlay" hidden>
+    <div class="sheet center">
+      <div class="tv-big">🚪</div>
+      <h2>Tu as été retiré·e de la partie</h2>
+      <p class="muted">Le maître du jeu t’a sorti de la liste des joueurs.</p>
+      <button id="rejoin" class="btn big">Demander à revenir</button>
+    </div>
+  </div>
+
+  <div id="podium" class="overlay pod"><div class="inner"></div></div>
+
+  <div id="join" class="overlay join">
+    <form id="joinForm" class="sheet">
+      <div class="join-head"><span id="preview" class="av xl">🙂</span><h2>Ton buzzer</h2></div>
+      <label class="lbl">Prénom
+        <input name="name" maxlength="16" autocomplete="nickname" placeholder="Ex. Léa" required>
+      </label>
+      <div class="lbl">Avatar</div>
+      <div id="avatars" class="grid-picks"></div>
+      <div class="lbl">Couleur</div>
+      <div id="colors" class="grid-swatches"></div>
+      <div class="lbl">Son du buzzer <small class="muted">(touche pour écouter)</small></div>
+      <div id="sounds" class="grid-sounds"></div>
+      <button class="btn big go" type="submit">C’est parti ! 🚀</button>
+    </form>
+  </div>
+</body>
+</html>

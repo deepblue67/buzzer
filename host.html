@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#140b2e">
+  <title>BUZZ! · Maître du jeu</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎩</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/vendor/supabase.js" defer></script>
+  <script src="js/vendor/qrcode.js" defer></script>
+  <script type="module" src="js/host.js"></script>
+</head>
+<body class="host">
+  <header class="topbar">
+    <a class="logo sm" href="index.html">BUZZ<span>!</span></a>
+    <button class="code-chip" data-act="qr" title="Afficher le QR code">🔑 <b id="roomCode">····</b></button>
+    <span id="online" class="muted small"></span>
+    <span id="conn" class="conn"></span>
+    <button class="icon" data-act="settings" aria-label="Réglages">⚙️</button>
+  </header>
+  <div id="dupHost" class="banner warn" hidden>⚠️ Un autre écran « maître du jeu » est ouvert pour cette salle. Garde-en un seul !</div>
+
+  <main class="host-main">
+    <section id="stage" class="card stage"></section>
+
+    <section class="card" id="queueCard">
+      <h3 id="qTitle" class="sec-title"></h3>
+      <ol id="queue" class="list queue"></ol>
+    </section>
+
+    <section class="card">
+      <h3 class="sec-title">🏆 Classement</h3>
+      <ol id="board" class="list board"></ol>
+    </section>
+
+    <div class="row bottom">
+      <button id="undoBtn" class="btn ghost" data-act="undo">↩️ Annuler</button>
+      <button class="btn ghost" data-act="podium">🏁 Fin de partie</button>
+    </div>
+  </main>
+
+  <div id="qrModal" class="modal">
+    <div class="sheet center">
+      <h2>Rejoindre la partie</h2>
+      <div id="qrBig" class="qrbox"></div>
+      <p class="big-txt">Code <b class="code" id="roomCode2"></b></p>
+      <p id="joinUrl" class="muted small break"></p>
+      <button class="btn" data-act="close">Fermer</button>
+    </div>
+  </div>
+
+  <div id="setModal" class="modal">
+    <div class="sheet">
+      <h2>⚙️ Réglages</h2>
+      <form id="setForm" class="settings" onsubmit="return false">
+        <fieldset>
+          <legend>Ouverture des buzzers</legend>
+          <label><input type="radio" name="openMode" value="instant"> Dès « Question suivante »</label>
+          <label><input type="radio" name="openMode" value="manual"> Quand j’appuie sur « TOP ! »</label>
+          <label><input type="radio" name="openMode" value="countdown"> « TOP ! » puis compte à rebours 3-2-1</label>
+        </fieldset>
+        <label class="switch"><input type="checkbox" name="malus"> <span>−1 point pour une mauvaise réponse</span></label>
+        <label class="switch"><input type="checkbox" name="falseStart"> <span>Buzz trop tôt = buzzer bloqué 1 s 🐢</span></label>
+        <label class="switch"><input type="checkbox" name="sound"> <span>Sons sur ce téléphone</span></label>
+      </form>
+      <div class="tvbox">
+        <p><b>📺 Écran TV</b> : ouvre cette adresse sur la télé ou un PC</p>
+        <p id="tvUrl" class="muted small break"></p>
+        <a id="tvLink" class="btn ghost" target="_blank">Ouvrir ici</a>
+      </div>
+      <div class="row">
+        <button class="btn ghost" data-act="reset">🔄 Scores à zéro</button>
+        <button class="btn ghost" data-act="newroom">🆕 Nouvelle salle</button>
+      </div>
+      <button class="btn" data-act="close">Fermer</button>
+    </div>
+  </div>
+</body>
+</html>
