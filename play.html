@@ -15,14 +15,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=6">
+  <link rel="stylesheet" href="css/style.css?v=7">
   <script src="js/vendor/supabase.js" defer></script>
-  <script type="module" src="js/play.js?v=6"></script>
+  <script type="module" src="js/play.js?v=7"></script>
 </head>
 <body class="play">
   <header class="topbar">
     <button id="editProfile" class="me-btn" title="Modifier mon profil">
-      <span id="meAv" class="av">🙂</span><span id="meName">…</span>
+      <span id="meAv" class="av">🙂</span><span id="meName">…</span><span class="swap" aria-hidden="true">🔄</span>
     </button>
     <span class="pill" title="Mon score">⭐ <b id="meScore">0</b></span>
     <span class="pill" title="Mon classement">🏅 <b id="meRank">–</b></span>
@@ -60,9 +60,9 @@
 
   <div id="join" class="overlay join">
     <form id="joinForm" class="sheet">
-      <div class="join-head"><span id="preview" class="av xl">🙂</span><h2>Ton buzzer</h2></div>
+      <div class="join-head"><span id="preview" class="av xl">🙂</span><div><h2 id="joinTitle">Qui es-tu ?</h2><p id="joinHint" class="muted small" hidden></p></div></div>
       <div id="who" class="who" hidden>
-        <div class="lbl">Qui es-tu ?</div>
+        <div class="lbl">Choisis ton prénom</div>
         <div id="whoList" class="grid-who"></div>
       </div>
       <label class="lbl" id="nameLbl">Prénom

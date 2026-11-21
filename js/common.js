@@ -66,6 +66,12 @@ export const store = {
 };
 
 /** Identifiant stable de cet appareil (par onglet en mode test local). */
+/** Nouveau joueur sur ce téléphone : on oublie l'identifiant du précédent. */
+export function resetDeviceId() {
+  if (params.get('local') === '1') sessionStorage.removeItem('buzzer-id');
+  else store.del('buzzer-id');
+}
+
 export function deviceId() {
   const key = params.get('local') === '1' ? null : 'buzzer-id';
   if (key) {

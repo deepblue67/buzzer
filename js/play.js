@@ -2,7 +2,7 @@
 import { createTransport } from './transport.js';
 import { ClockSync } from './clock.js';
 import * as G from './game.js';
-import { now, getRoom, link, esc, $, $$, toast, keepAwake, setConn, deviceId, profileStore, AVATARS, COLORS, SOUNDS } from './common.js';
+import { now, getRoom, link, esc, $, $$, toast, keepAwake, setConn, deviceId, resetDeviceId, profileStore, AVATARS, COLORS, SOUNDS } from './common.js';
 import { queueHtml, boardHtml, podiumHtml, flipRender } from './ui.js';
 import * as FX from './fx.js';
 
@@ -12,7 +12,11 @@ if (!room) {
   await new Promise(() => {}); // stoppe le module pendant la redirection
 }
 const me = deviceId();
-let profile = profileStore.get();
+// Profil mémorisé sur ce téléphone. On ne rejoint tout seul que la MÊME salle
+// (rechargement en cours de partie) ; pour une nouvelle partie, on redemande
+// « Qui es-tu ? » car le téléphone a pu changer de mains.
+const saved = profileStore.get();
+let profile = saved && saved.room === getRoom() ? saved : null;
 let state = null;
 let online = false;
 let hostOnline = null;
@@ -218,7 +222,7 @@ function statusFor() {
   if (Date.now() < falseStartUntil) return { title: 'Trop tôt ! 🐢', sub: 'Buzzer bloqué une seconde', btn: 'early', label: '🐢' };
   switch (q.phase) {
     case 'lobby':
-      return { title: 'Tu es inscrit·e ! 🎉', sub: 'La partie va bientôt commencer', btn: 'closed', label: 'BUZZ' };
+      return { title: 'Tu es inscrit·e ! 🎉', sub: `Pas ${p.name} ? Touche ton prénom en haut pour changer`, btn: 'closed', label: 'BUZZ' };
     case 'ready':
       return { title: 'Écoute la question… 👂', sub: 'Attends le TOP du maître du jeu', btn: 'closed', label: 'BUZZ' };
     case 'countdown': {
@@ -306,11 +310,11 @@ setInterval(() => !state && render(), 1000);
 // ---------- Inscription ----------
 const form = $('#joinForm');
 let draft = {
-  name: profile?.name || '',
-  avatar: profile?.avatar || AVATARS[Math.floor(Math.random() * AVATARS.length)],
-  color: profile?.color || COLORS[Math.floor(Math.random() * COLORS.length)],
-  sound: profile?.sound || SOUNDS[Math.floor(Math.random() * SOUNDS.length)].id,
-  rid: profile?.rid || null, // joueur enregistré choisi dans « Qui es-tu ? »
+  name: saved?.name || '',
+  avatar: saved?.avatar || AVATARS[Math.floor(Math.random() * AVATARS.length)],
+  color: saved?.color || COLORS[Math.floor(Math.random() * COLORS.length)],
+  sound: saved?.sound || SOUNDS[Math.floor(Math.random() * SOUNDS.length)].id,
+  rid: saved?.rid || null, // joueur enregistré choisi dans « Qui es-tu ? »
 };
 const sameName = (a, b) => String(a).trim().toLocaleLowerCase('fr') === String(b).trim().toLocaleLowerCase('fr');
 /** Prénom déjà utilisé par un autre joueur connecté ? */
@@ -333,6 +337,9 @@ function renderWho() {
 
 function renderJoin() {
   form.name.value = draft.name;
+  $('#joinTitle').textContent = profile ? 'Qui joue sur ce téléphone ?' : 'Qui es-tu ?';
+  $('#joinHint').hidden = !profile;
+  $('#joinHint').textContent = profile ? `Tu passes le téléphone ? Choisis un autre prénom : ${profile.name} garde ses points.` : '';
   renderWho();
   $('#avatars').innerHTML = AVATARS.map((a) => `<button type="button" class="pick ${a === draft.avatar ? 'on' : ''}" data-av="${a}">${a}</button>`).join('');
   $('#colors').innerHTML = COLORS.map((c) => `<button type="button" class="swatch ${c === draft.color ? 'on' : ''}" data-color="${c}" style="--c:${c}" aria-label="Couleur ${c}"></button>`).join('');
@@ -382,7 +389,16 @@ form.addEventListener('submit', (e) => {
     return;
   }
   const rp = draft.rid && pick.find((x) => x.id === draft.rid);
-  profile = { ...draft, name: name.slice(0, 16), rid: rp && sameName(rp.name, name) ? rp.id : null };
+  const next = { ...draft, name: name.slice(0, 16), rid: rp && sameName(rp.name, name) ? rp.id : null, room };
+  if (profile && !sameName(profile.name, next.name)) {
+    // Le téléphone passe à quelqu'un d'autre : nouvelle identité (l'ancien joueur
+    // garde ses points dans la partie), puis on recharge pour repartir proprement.
+    profileStore.set(next);
+    resetDeviceId();
+    location.reload();
+    return;
+  }
+  profile = next;
   profileStore.set(profile);
   $('#join').classList.remove('open');
   FX.play('join');
@@ -390,7 +406,7 @@ form.addEventListener('submit', (e) => {
   render();
 });
 $('#editProfile').addEventListener('click', () => {
-  draft = { ...profile };
+  if (profile) draft = { ...profile };
   renderJoin();
   $('#join').classList.add('open');
   render();

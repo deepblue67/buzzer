@@ -532,6 +532,8 @@ html, body { overflow-x: hidden; }
 .center { text-align: center; }
 
 /* « Qui es-tu ? » sur le téléphone */
+.me-btn .swap { font-size: 0.8rem; opacity: 0.7; }
+.join-head p { margin: 0.2rem 0 0; }
 .who { display: grid; gap: 0.35rem; }
 .grid-who { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .who-chip {
