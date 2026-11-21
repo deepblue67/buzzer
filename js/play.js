@@ -222,7 +222,7 @@ function statusFor() {
   if (Date.now() < falseStartUntil) return { title: 'Trop tôt ! 🐢', sub: 'Buzzer bloqué une seconde', btn: 'early', label: '🐢' };
   switch (q.phase) {
     case 'lobby':
-      return { title: 'Tu es inscrit·e ! 🎉', sub: `Pas ${p.name} ? Touche ton prénom en haut pour changer`, btn: 'closed', label: 'BUZZ' };
+      return { title: 'Tu es inscrit·e ! 🎉', sub: `Tu n’es pas ${p.name} ? Touche ton prénom en haut pour changer`, btn: 'closed', label: 'BUZZ' };
     case 'ready':
       return { title: 'Écoute la question… 👂', sub: 'Attends le TOP du maître du jeu', btn: 'closed', label: 'BUZZ' };
     case 'countdown': {
