@@ -8,7 +8,7 @@ const SKEW = Number(params.get('skew') || 0); // test : décalage d'horloge simu
 /** Horloge locale (avec décalage simulé éventuel en mode test). */
 export const now = () => localNow() + SKEW;
 
-export const AVATARS = ['🦊', '🐸', '🐼', '🐯', '🦁', '🐵', '🐙', '🦄', '🐲', '🐧', '🦉', '🐻', '🐨', '🐷', '🐮', '🐰', '🦖', '🐝', '🦀', '🐳', '👽', '🤖', '👻', '🎃', '🤠', '🥷', '🧙', '🦸', '🍕', '🌵'];
+export const AVATARS = ['🦊', '🐸', '🐼', '🐯', '🦁', '🐵', '🐙', '🦄', '🐲', '🐧', '🦉', '🐻', '🐨', '🐷', '🐮', '🐰', '🦖', '🐝', '🦀', '🐳', '👽', '🤖', '👻', '🎃', '🤠', '🥷', '🧙', '🦸', '🍕', '🌵', '🐶', '🐱', '🦋', '🐢'];
 export const COLORS = ['#ff4d6d', '#ff9f1c', '#ffd60a', '#70e000', '#2ec4b6', '#00b4d8', '#4361ee', '#9d4edd', '#f15bb5', '#8d6e63'];
 export const SOUNDS = [
   { id: 'klaxon', label: '📯 Klaxon' },

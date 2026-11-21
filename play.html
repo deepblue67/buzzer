@@ -15,9 +15,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=5">
+  <link rel="stylesheet" href="css/style.css?v=6">
   <script src="js/vendor/supabase.js" defer></script>
-  <script type="module" src="js/play.js?v=5"></script>
+  <script type="module" src="js/play.js?v=6"></script>
 </head>
 <body class="play">
   <header class="topbar">
@@ -61,7 +61,11 @@
   <div id="join" class="overlay join">
     <form id="joinForm" class="sheet">
       <div class="join-head"><span id="preview" class="av xl">🙂</span><h2>Ton buzzer</h2></div>
-      <label class="lbl">Prénom
+      <div id="who" class="who" hidden>
+        <div class="lbl">Qui es-tu ?</div>
+        <div id="whoList" class="grid-who"></div>
+      </div>
+      <label class="lbl" id="nameLbl">Prénom
         <input name="name" maxlength="16" autocomplete="nickname" placeholder="Ex. Léa" required>
       </label>
       <div class="lbl">Avatar</div>

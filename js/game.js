@@ -6,6 +6,7 @@ export const DEFAULT_SETTINGS = {
   malus: false, // −1 point pour une mauvaise réponse
   openMode: 'instant', // 'instant' | 'manual' | 'countdown'
   falseStart: true, // buzzer bloqué 1 s si on buzze avant l'ouverture
+  group: '', // groupe de joueurs enregistrés proposé sur les téléphones ('' = tout le monde)
 };
 
 export const COUNTDOWN_MS = 3000;
@@ -68,6 +69,32 @@ export function upsertPlayer(state, profile, now, { rejoin = false } = {}) {
   if (s.players[id]) Object.assign(s.players[id], fields);
   else s.players[id] = { id, ...fields, ...freshStats(), joinedAt: now };
   return s;
+}
+
+/**
+ * Un joueur reprend sa place depuis un autre téléphone (même prénom, ancien
+ * téléphone déconnecté) : ses points et sa place dans la file le suivent.
+ */
+export function movePlayer(state, oldId, newId) {
+  if (!state.players[oldId] || oldId === newId) return state;
+  const s = clone(state);
+  if (s.players[newId]) {
+    // ce téléphone jouait sous un autre prénom : on garde ce joueur à part
+    const keep = randomId(12);
+    s.players[keep] = { ...s.players[newId], id: keep };
+    renameIds(s, newId, keep);
+  }
+  s.players[newId] = { ...s.players[oldId], id: newId };
+  delete s.players[oldId];
+  renameIds(s, oldId, newId);
+  return s;
+}
+
+function renameIds(s, from, to) {
+  for (const e of s.q.queue) if (e.id === from) e.id = to;
+  s.q.locked = s.q.locked.map((id) => (id === from ? to : id));
+  if (s.q.winner === from) s.q.winner = to;
+  s.kicked = s.kicked.filter((id) => id !== from);
 }
 
 export function kick(state, id) {

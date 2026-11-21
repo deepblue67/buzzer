@@ -1,7 +1,8 @@
 // Maître du jeu : c'est lui qui fait foi (horloge de référence + état de la partie).
 import { createTransport } from './transport.js';
 import * as G from './game.js';
-import { now, getRoom, makeRoomCode, link, absUrl, store, esc, $, toast, keepAwake, setConn, qrSvg } from './common.js';
+import { now, getRoom, makeRoomCode, link, absUrl, store, esc, $, toast, keepAwake, setConn, qrSvg, AVATARS, COLORS } from './common.js';
+import { createRosterStore } from './roster.js';
 import { queueHtml, boardHtml, podiumHtml, phaseLabel, avatarBubble, flipRender } from './ui.js';
 import * as FX from './fx.js';
 
@@ -14,7 +15,9 @@ if (!room) {
 const SAVE_KEY = 'buzzer-host:' + room;
 store.set('buzzer-last-host-room', room);
 
-let state = store.get(SAVE_KEY) || G.newGame(room, now());
+const roster = createRosterStore(store); // joueurs enregistrés et groupes (sur ce téléphone)
+let state = store.get(SAVE_KEY) || G.newGame(room, now(), { group: store.get('buzzer-group', '') });
+if (state.settings.group && !roster.group(state.settings.group)) state.settings.group = '';
 const undoStack = [];
 const rtts = new Map(); // id joueur -> latence aller-retour connue
 let online = new Set();
@@ -36,8 +39,14 @@ const tr = createTransport(room, {
 let bcTimer = null;
 function broadcastState() {
   clearTimeout(bcTimer);
-  bcTimer = setTimeout(() => tr.send('state', { state, th: now() }), 25);
+  bcTimer = setTimeout(() => tr.send('state', { state, th: now(), pick: pickList() }), 25);
 }
+
+/** Prénoms proposés dans le « Qui es-tu ? » des téléphones : joueurs enregistrés du groupe qui joue. */
+function pickList() {
+  return roster.inGroup(state.settings.group).map(({ id, name, avatar, color }) => ({ id, name, avatar, color }));
+}
+const sameName = (a, b) => String(a).toLocaleLowerCase('fr') === String(b).toLocaleLowerCase('fr');
 
 function commit(next, { undo = false } = {}) {
   if (!next || next === state) return false;
@@ -84,10 +93,26 @@ tr.on('need-state', broadcastState);
 tr.on('hello', (m) => {
   if (m.role === 'tv') return broadcastState();
   if (Number.isFinite(m.rtt)) rtts.set(m.id, m.rtt);
-  const isNew = !state.players[m.id];
-  const next = G.upsertPlayer(state, m, now(), { rejoin: !!m.rejoin });
+  const name = String(m.name || '').trim().slice(0, 16);
+  if (!name) return;
+  // Un prénom = un joueur : refusé si quelqu'un de connecté l'utilise déjà,
+  // sinon (ancien téléphone déconnecté) ce téléphone reprend sa place et ses points.
+  let base = state;
+  const clash = Object.values(state.players).find((p) => p.id !== m.id && sameName(p.name, name));
+  if (clash) {
+    if (online.has(clash.id)) return tr.send('join-err', { to: m.id, msg: `${clash.name} est déjà dans la partie 🙂 Choisis un autre prénom.` });
+    base = G.movePlayer(state, clash.id, m.id);
+  }
+  const isNew = !state.players[m.id] && !clash;
+  const next = G.upsertPlayer(base, { ...m, name }, now(), { rejoin: !!m.rejoin });
+  // Joueur enregistré qui change son animal ou sa couleur sur son téléphone : on le retient.
+  const r = m.rid && roster.players.find((x) => x.id === m.rid);
+  if (next && r && sameName(r.name, name) && (r.avatar !== m.avatar || r.color !== m.color)) {
+    roster.update(r.id, { avatar: m.avatar, color: m.color });
+    renderRoster();
+  }
   if (!next) return broadcastState(); // joueur exclu : il verra qu'il n'est plus dans la partie
-  const changed = JSON.stringify(next.players[m.id]) !== JSON.stringify(state.players[m.id]) || next.kicked.length !== state.kicked.length;
+  const changed = base !== state || JSON.stringify(next.players[m.id]) !== JSON.stringify(state.players[m.id]) || next.kicked.length !== state.kicked.length;
   if (changed) {
     commit(next);
     if (isNew) {
@@ -229,6 +254,11 @@ document.addEventListener('click', (e) => {
   if (!b || b.disabled) return;
   const act = b.dataset.act;
   const id = b.dataset.id;
+  if (act.startsWith('r') && rosterActs[act]) return rosterActs[act](b);
+  if (act === 'group') {
+    store.set('buzzer-group', b.dataset.g);
+    return commit(G.setSettings(state, { group: b.dataset.g }));
+  }
   if (act === 'plus') return commit(G.adjustScore(state, id, 1), { undo: true });
   if (act === 'minus') return commit(G.adjustScore(state, id, -1), { undo: true });
   if (act === 'kick') {
@@ -251,6 +281,146 @@ document.addEventListener('keydown', (e) => {
   else if (k === 'm' && G.isHeadFrozen(q)) actions.wrong();
   else if (k === 'u') actions.undo();
 });
+
+// ---------- Joueurs enregistrés & groupes ----------
+let rFilter = '';
+let rGroupsOpen = false;
+const cycle = (list, cur) => list[(list.indexOf(cur) + 1) % list.length];
+function rosterChanged() {
+  renderRoster();
+  lastStageKey = '';
+  render();
+  broadcastState();
+}
+function tryRoster(fn) {
+  try {
+    fn();
+    rosterChanged();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+const rosterActs = {
+  roster() {
+    renderRoster();
+    openModal('#rosterModal');
+  },
+  rFilter: (b) => {
+    rFilter = b.dataset.g;
+    renderRoster();
+  },
+  rGroups: () => {
+    rGroupsOpen = !rGroupsOpen;
+    renderRoster();
+  },
+  rAvatar: (b) => tryRoster(() => roster.update(b.dataset.id, { avatar: cycle(AVATARS, roster.players.find((p) => p.id === b.dataset.id)?.avatar) })),
+  rColor: (b) => tryRoster(() => roster.update(b.dataset.id, { color: cycle(COLORS, roster.players.find((p) => p.id === b.dataset.id)?.color) })),
+  rToggle: (b) => tryRoster(() => roster.toggleGroup(b.dataset.id, b.dataset.g)),
+  rDel: (b) => {
+    const p = roster.players.find((x) => x.id === b.dataset.id);
+    if (p && confirm(`Supprimer ${p.name} de la liste des joueurs enregistrés ?`)) tryRoster(() => roster.remove(p.id));
+  },
+  rAdd: () => {
+    const el = $('#rNew');
+    const used = roster.players;
+    tryRoster(() => {
+      roster.add(el.value, {
+        groupId: rFilter || state.settings.group,
+        avatar: AVATARS.find((a) => !used.some((p) => p.avatar === a)),
+        color: COLORS.find((c) => !used.some((p) => p.color === c)) || COLORS[used.length % COLORS.length],
+      });
+    });
+    setTimeout(() => $('#rNew')?.focus(), 0);
+  },
+  rgIcon: (b) => tryRoster(() => roster.cycleGroupIcon(b.dataset.g)),
+  rgAdd: () => tryRoster(() => roster.addGroup($('#gNew').value)),
+  rgDel: (b) => {
+    const g = roster.group(b.dataset.g);
+    if (!g || !confirm(`Supprimer le groupe ${g.icon} ${g.name} ? Les joueurs ne sont pas supprimés : ils quittent seulement ce groupe.`)) return;
+    tryRoster(() => {
+      roster.removeGroup(g.id);
+      if (rFilter === g.id) rFilter = '';
+      if (state.settings.group === g.id) commit(G.setSettings(state, { group: '' }));
+    });
+  },
+  rImport: () =>
+    tryRoster(() => {
+      const n = roster.importUndercover($('#impTxt').value);
+      $('#impTxt').value = '';
+      toast(n ? `✅ ${n} joueur${n > 1 ? 's' : ''} importé${n > 1 ? 's' : ''} d’Undercover` : '✅ Groupes mis à jour (aucun nouveau joueur)');
+    }),
+};
+
+function renderRoster() {
+  const body = $('#rosterBody');
+  if (!body) return;
+  const list = roster.inGroup(rFilter);
+  const count = (gid) => roster.inGroup(gid).length;
+  const chips = [['', '👥 Tous']].concat(roster.groups.map((g) => [g.id, `${g.icon} ${esc(g.name)}`]))
+    .map(([id, l]) => `<button class="chip ${rFilter === id ? 'on' : ''}" data-act="rFilter" data-g="${esc(id)}">${l} <small>${count(id)}</small></button>`)
+    .join('');
+  const groupsEditor = rGroupsOpen
+    ? `<div class="gedit">${roster.groups
+        .map((g) => `<div class="grow-row"><button class="mini big-ico" data-act="rgIcon" data-g="${esc(g.id)}" aria-label="Changer l’icône">${g.icon}</button>
+          <input class="gname" data-gid="${esc(g.id)}" value="${esc(g.name)}" maxlength="20" aria-label="Nom du groupe">
+          <span class="muted small">${count(g.id)}</span><button class="mini kick" data-act="rgDel" data-g="${esc(g.id)}" aria-label="Supprimer le groupe">✕</button></div>`)
+        .join('')}
+        <div class="row add-row"><input id="gNew" placeholder="Nouveau groupe (ex. Foot, Voisins)" maxlength="20" enterkeyhint="done"><button class="btn go" data-act="rgAdd">＋</button></div></div>`
+    : '';
+  const rows = list
+    .map((p) => `<div class="rrow" style="--c:${esc(p.color)}">
+      <button class="av" style="--c:${esc(p.color)}" data-act="rAvatar" data-id="${esc(p.id)}" aria-label="Changer l’animal">${esc(p.avatar)}</button>
+      <input class="rname" data-rid="${esc(p.id)}" value="${esc(p.name)}" maxlength="16" aria-label="Prénom">
+      <button class="dot" style="background:${esc(p.color)}" data-act="rColor" data-id="${esc(p.id)}" aria-label="Changer la couleur"></button>
+      <button class="mini kick" data-act="rDel" data-id="${esc(p.id)}" aria-label="Supprimer">✕</button>
+      <div class="gchips">${roster.groups.map((g) => `<button class="gchip ${p.groups.includes(g.id) ? 'on' : ''}" data-act="rToggle" data-id="${esc(p.id)}" data-g="${esc(g.id)}">${g.icon} ${esc(g.name)}</button>`).join('')}</div></div>`)
+    .join('');
+  body.innerHTML = `<h2>👥 Joueurs enregistrés</h2>
+    <p class="muted small">Ils apparaissent dans le « Qui es-tu ? » des téléphones. Touche l’animal ou la pastille pour les changer, et les groupes pour y ranger un joueur.</p>
+    <div class="chips">${chips}<button class="chip add" data-act="rGroups">⚙️ Groupes</button></div>
+    ${groupsEditor}
+    <div class="rlist">${rows || `<p class="muted center">${rFilter ? 'Personne dans ce groupe.' : 'Aucun joueur enregistré pour l’instant.'}</p>`}</div>
+    <div class="row add-row"><input id="rNew" placeholder="Prénom du nouveau joueur" maxlength="16" enterkeyhint="done"><button class="btn go" data-act="rAdd">＋</button></div>
+    <details class="imp"><summary>📥 Importer depuis Undercover</summary>
+      <p class="muted small">Dans Undercover : « Exporter mes données », puis copie le code (il commence par UCF2:) ou télécharge le fichier. Les joueurs et les groupes sont ajoutés, rien n’est effacé.</p>
+      <textarea id="impTxt" rows="3" placeholder="Colle le code ici (UCF2:…)"></textarea>
+      <div class="row"><button class="btn" data-act="rImport">Importer le code</button><label class="btn ghost">📂 Fichier .json<input type="file" id="impFile" accept=".json,.txt,application/json,text/plain" hidden></label></div>
+    </details>
+    <button class="btn" data-act="close">Fermer</button>`;
+}
+$('#rosterBody').addEventListener('change', (e) => {
+  const t = e.target;
+  if (t.classList.contains('rname')) {
+    try {
+      roster.update(t.dataset.rid, { name: t.value });
+    } catch (err) {
+      toast(err.message);
+    }
+    rosterChanged();
+  } else if (t.classList.contains('gname')) {
+    roster.renameGroup(t.dataset.gid, t.value);
+    rosterChanged();
+  } else if (t.id === 'impFile' && t.files[0]) {
+    t.files[0].text().then((txt) => {
+      $('#impTxt').value = txt;
+      rosterActs.rImport();
+    });
+  }
+});
+$('#rosterBody').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  if (e.target.id === 'rNew') rosterActs.rAdd();
+  else if (e.target.id === 'gNew') rosterActs.rgAdd();
+  else if (e.target.matches('.rname, .gname')) e.target.blur();
+});
+
+function groupPickerHtml() {
+  const cur = state.settings.group;
+  const opts = [['', '👥 Tous', roster.players.length]].concat(roster.groups.map((g) => [g.id, `${g.icon} ${esc(g.name)}`, roster.inGroup(g.id).length]));
+  return `<div class="gpick"><span class="muted small">Groupe qui joue</span><div class="chips">${opts
+    .map(([id, l, n]) => `<button class="chip ${cur === id ? 'on' : ''}" data-act="group" data-g="${esc(id)}">${l} <small>${n}</small></button>`)
+    .join('')}<button class="chip add" data-act="roster">✏️ Joueurs</button></div></div>`;
+}
 
 // ---------- Modales & réglages ----------
 function openModal(sel) {
@@ -301,6 +471,7 @@ function stageHtml() {
         <div class="qrbox small" data-act="qr">${qrSvg(joinUrl)}</div>
         <div><p class="big-txt">Code <b class="code">${room}</b></p>
         <p class="muted">${live ? `${live} joueur${live > 1 ? 's' : ''} connecté${live > 1 ? 's' : ''} 🎉` : 'Les joueurs scannent le QR code pour s’inscrire.'}</p></div></div>
+        ${groupPickerHtml()}
         ${waitMsg}<button class="btn big go" data-act="next" ${dis}>▶ Première question</button>`;
     case 'ready':
       return `<p class="phase">Question ${q.n}</p><p class="big-txt">📣 Lis ta question…</p>
@@ -341,7 +512,7 @@ let lastStageKey = '';
 function render() {
   const q = state.q;
   // On ne reconstruit la zone principale que si elle change (évite de "manger" un appui).
-  const stageKey = JSON.stringify([state.podium, q.n, q.phase, q.queue.map((e) => [e.id, e.res]), q.frozen, q.winner, q.locked.length, Object.keys(state.players).length, state.players[q.winner]?.score, connectedCount()]);
+  const stageKey = JSON.stringify([state.podium, q.n, q.phase, q.queue.map((e) => [e.id, e.res]), q.frozen, q.winner, q.locked.length, Object.keys(state.players).length, state.players[q.winner]?.score, connectedCount(), state.settings.group]);
   if (stageKey !== lastStageKey) {
     $('#stage').innerHTML = stageHtml();
     $('#stage').dataset.phase = state.podium ? 'podium' : q.phase;

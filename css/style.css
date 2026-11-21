@@ -474,3 +474,76 @@ html, body { overflow-x: hidden; }
   .host #online { display: none; }
   .topbar { gap: 0.35rem; }
 }
+
+/* ---------- Joueurs enregistrés & groupes ---------- */
+.chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.chips .chip {
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.9rem;
+  padding: 0.4em 0.75em;
+  border-radius: 999px;
+  font-weight: 500;
+}
+.chips .chip small { color: var(--muted); margin-left: 0.15em; }
+.chips .chip.on { border-color: var(--yellow); background: rgba(255, 214, 10, 0.16); }
+.chips .chip.add { background: none; border: 2px dashed var(--line); }
+.gpick { display: grid; gap: 0.4rem; text-align: left; }
+.sheet.tall { max-height: calc(100dvh - 2rem); overflow-y: auto; }
+.rlist { display: grid; gap: 0.5rem; }
+.rrow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 5px solid var(--c);
+}
+.rrow .av { border: 0; font-size: 1.15rem; cursor: pointer; }
+.rrow input, .gedit input, .add-row input, .imp textarea {
+  padding: 0.5em 0.7em;
+  border-radius: 10px;
+  border: 2px solid var(--line);
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 1rem;
+  width: 100%;
+}
+.rrow input:focus, .gedit input:focus, .add-row input:focus, .imp textarea:focus { outline: none; border-color: var(--yellow); }
+.dot { width: 1.8rem; height: 1.8rem; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.85); }
+.mini { width: 2rem; height: 2rem; border-radius: 10px; border: 0; background: rgba(255, 255, 255, 0.1); font-weight: 700; }
+.mini.kick { color: #fda4af; }
+.mini.big-ico { font-size: 1.2rem; }
+.gchips { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.3rem; padding-left: 2.7rem; }
+.gchip { border: 1px solid var(--line); background: none; color: var(--muted); border-radius: 999px; padding: 0.2em 0.6em; font-size: 0.8rem; }
+.gchip.on { background: rgba(46, 196, 182, 0.25); border-color: var(--cyan); color: #fff; }
+.gedit { display: grid; gap: 0.45rem; background: rgba(255, 255, 255, 0.04); border-radius: 14px; padding: 0.6rem; }
+.grow-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 0.5rem; align-items: center; }
+.add-row { flex-wrap: nowrap; }
+.add-row > input { flex: 1; }
+.add-row > .btn { flex: none; padding: 0.55em 0.9em; }
+.imp { background: rgba(255, 255, 255, 0.04); border-radius: 14px; padding: 0.6rem 0.8rem; }
+.imp summary { cursor: pointer; font-weight: 600; }
+.imp[open] { display: grid; gap: 0.5rem; }
+.imp textarea { resize: vertical; font-family: ui-monospace, monospace; font-size: 0.8rem; }
+.imp label.btn { cursor: pointer; }
+.center { text-align: center; }
+
+/* « Qui es-tu ? » sur le téléphone */
+.who { display: grid; gap: 0.35rem; }
+.grid-who { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.who-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 0.25em 0.8em 0.25em 0.3em;
+  font-weight: 600;
+  font-size: 1rem;
+}
+.who-chip .av { font-size: 0.85rem; }
+.who-chip.on { border-color: var(--yellow); background: color-mix(in srgb, var(--c) 30%, transparent); }

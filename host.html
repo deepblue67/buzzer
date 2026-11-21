@@ -15,10 +15,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=5">
+  <link rel="stylesheet" href="css/style.css?v=6">
   <script src="js/vendor/supabase.js" defer></script>
   <script src="js/vendor/qrcode.js" defer></script>
-  <script type="module" src="js/host.js?v=5"></script>
+  <script type="module" src="js/host.js?v=6"></script>
 </head>
 <body class="host">
   <header class="topbar">
@@ -26,6 +26,7 @@
     <button class="code-chip" data-act="qr" title="Afficher le QR code">🔑 <b id="roomCode">····</b></button>
     <span id="online" class="muted small"></span>
     <span id="conn" class="conn"></span>
+    <button class="icon" data-act="roster" aria-label="Joueurs enregistrés">👥</button>
     <button class="icon" data-act="settings" aria-label="Réglages">⚙️</button>
   </header>
   <div id="dupHost" class="banner warn" hidden>⚠️ Un autre écran « maître du jeu » est ouvert pour cette salle. Garde-en un seul !</div>
@@ -57,6 +58,10 @@
       <p id="joinUrl" class="muted small break"></p>
       <button class="btn" data-act="close">Fermer</button>
     </div>
+  </div>
+
+  <div id="rosterModal" class="modal">
+    <div class="sheet tall" id="rosterBody"></div>
   </div>
 
   <div id="setModal" class="modal">

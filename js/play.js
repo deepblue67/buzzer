@@ -61,12 +61,31 @@ function sayHello(force = false) {
 tr.on('pong', (m) => clock.handlePong(m));
 tr.on('resync', () => clock.burst(5));
 
-tr.on('state', ({ state: s }) => {
+let pick = []; // joueurs enregistrés proposés par le maître du jeu (« Qui es-tu ? »)
+let onlineIds = new Set();
+tr.on('state', ({ state: s, pick: pk }) => {
+  if (Array.isArray(pk) && JSON.stringify(pk) !== JSON.stringify(pick)) {
+    pick = pk;
+    renderWho();
+  }
   if (state && s.gid === state.gid && s.v <= state.v) return;
   const prev = state;
   state = s;
   hostSeenAt = Date.now();
   onStateChange(prev);
+  renderWho();
+  render();
+});
+
+// Prénom refusé par le maître du jeu (déjà pris par un joueur connecté)
+tr.on('join-err', ({ to, msg }) => {
+  if (to !== me) return;
+  toast(msg, 3500);
+  FX.play('nope');
+  draft = { ...draft, ...(profile || {}), rid: null };
+  profile = null;
+  renderJoin();
+  $('#join').classList.add('open');
   render();
 });
 
@@ -93,6 +112,8 @@ tr.on('fx', ({ kind, id, party }) => {
 });
 
 tr.onPresence((list) => {
+  onlineIds = new Set(list.filter((m) => m.role === 'player').map((m) => m.id));
+  renderWho();
   const h = list.some((m) => m.role === 'host');
   if (h) hostSeenAt = Date.now();
   hostOnline = h;
@@ -289,10 +310,30 @@ let draft = {
   avatar: profile?.avatar || AVATARS[Math.floor(Math.random() * AVATARS.length)],
   color: profile?.color || COLORS[Math.floor(Math.random() * COLORS.length)],
   sound: profile?.sound || SOUNDS[Math.floor(Math.random() * SOUNDS.length)].id,
+  rid: profile?.rid || null, // joueur enregistré choisi dans « Qui es-tu ? »
 };
+const sameName = (a, b) => String(a).trim().toLocaleLowerCase('fr') === String(b).trim().toLocaleLowerCase('fr');
+/** Prénom déjà utilisé par un autre joueur connecté ? */
+function takenBy(name) {
+  if (!state) return null;
+  return Object.values(state.players).find((p) => p.id !== me && onlineIds.has(p.id) && sameName(p.name, name)) || null;
+}
+
+/** « Qui es-tu ? » : joueurs enregistrés du groupe qui joue, sauf ceux déjà connectés. */
+function renderWho() {
+  const box = $('#who');
+  if (!box) return;
+  const list = pick.filter((p) => !takenBy(p.name));
+  box.hidden = !list.length;
+  $('#whoList').innerHTML = list
+    .map((p) => `<button type="button" class="who-chip ${draft.rid === p.id ? 'on' : ''}" data-rid="${esc(p.id)}" style="--c:${esc(p.color)}"><span class="av" style="--c:${esc(p.color)}">${esc(p.avatar)}</span>${esc(p.name)}</button>`)
+    .join('');
+  $('#nameLbl').firstChild.textContent = list.length ? 'Ou écris ton prénom' : 'Prénom';
+}
 
 function renderJoin() {
   form.name.value = draft.name;
+  renderWho();
   $('#avatars').innerHTML = AVATARS.map((a) => `<button type="button" class="pick ${a === draft.avatar ? 'on' : ''}" data-av="${a}">${a}</button>`).join('');
   $('#colors').innerHTML = COLORS.map((c) => `<button type="button" class="swatch ${c === draft.color ? 'on' : ''}" data-color="${c}" style="--c:${c}" aria-label="Couleur ${c}"></button>`).join('');
   $('#sounds').innerHTML = SOUNDS.map((s) => `<button type="button" class="pick wide ${s.id === draft.sound ? 'on' : ''}" data-sound="${s.id}">${s.label}</button>`).join('');
@@ -303,6 +344,12 @@ form.addEventListener('click', (e) => {
   const b = e.target.closest('button');
   if (!b) return;
   FX.unlockAudio();
+  if (b.dataset.rid) {
+    const p = pick.find((x) => x.id === b.dataset.rid);
+    if (p) draft = { ...draft, name: p.name, avatar: p.avatar, color: p.color, rid: p.id };
+    renderJoin();
+    return;
+  }
   if (b.dataset.av) draft.avatar = b.dataset.av;
   if (b.dataset.color) draft.color = b.dataset.color;
   if (b.dataset.sound) {
@@ -311,6 +358,14 @@ form.addEventListener('click', (e) => {
   }
   draft.name = form.name.value;
   renderJoin();
+});
+form.name.addEventListener('input', () => {
+  draft.name = form.name.value;
+  const p = draft.rid && pick.find((x) => x.id === draft.rid);
+  if (draft.rid && (!p || !sameName(p.name, draft.name))) {
+    draft.rid = null;
+    renderWho();
+  }
 });
 form.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -321,7 +376,13 @@ form.addEventListener('submit', (e) => {
     toast('Ton prénom d’abord 😉');
     return;
   }
-  profile = { ...draft, name: name.slice(0, 16) };
+  const other = takenBy(name);
+  if (other) {
+    toast(`${other.name} est déjà dans la partie 🙂 Choisis un autre prénom.`, 3500);
+    return;
+  }
+  const rp = draft.rid && pick.find((x) => x.id === draft.rid);
+  profile = { ...draft, name: name.slice(0, 16), rid: rp && sameName(rp.name, name) ? rp.id : null };
   profileStore.set(profile);
   $('#join').classList.remove('open');
   FX.play('join');
