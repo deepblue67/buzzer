@@ -73,6 +73,9 @@ export function boardHtml(state, { me = null, online = null, host = false } = {}
 
 export function podiumHtml(state) {
   const list = ranking(state);
+  if (!list.some((p) => p.score > 0)) {
+    return `<h2 class="ptitle">🏁 Fin de partie !</h2><p class="big-txt">🤷 Personne n’a marqué de point… revanche ?</p>`;
+  }
   const top3 = [list[1], list[0], list[2]];
   const steps = top3
     .map((p, i) => {

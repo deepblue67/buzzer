@@ -52,7 +52,7 @@ tr.on('state', ({ state: s }) => {
   render();
 });
 
-tr.on('fx', ({ kind, id }) => {
+tr.on('fx', ({ kind, id, party }) => {
   if (!state) return;
   const p = id && state.players[id];
   if (kind === 'right') {
@@ -63,7 +63,7 @@ tr.on('fx', ({ kind, id }) => {
     FX.shake($('#spot'));
   } else if (kind === 'open') FX.play('go');
   else if (kind === 'join') FX.play('join');
-  else if (kind === 'podium') {
+  else if (kind === 'podium' && party) {
     FX.play('fanfare');
     FX.confetti({ count: 300 });
   }

@@ -70,7 +70,7 @@ tr.on('state', ({ state: s }) => {
   render();
 });
 
-tr.on('fx', ({ kind, id }) => {
+tr.on('fx', ({ kind, id, party }) => {
   if (kind === 'open') {
     FX.play('go');
     FX.vibrate(40);
@@ -86,7 +86,7 @@ tr.on('fx', ({ kind, id }) => {
       FX.vibrate([300, 80, 300]);
       FX.shake($('#buzzer'));
     } else FX.play('nope');
-  } else if (kind === 'podium') {
+  } else if (kind === 'podium' && party) {
     FX.play('fanfare');
     FX.confetti({ count: 220 });
   }

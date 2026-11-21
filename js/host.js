@@ -54,8 +54,8 @@ function commit(next, { undo = false } = {}) {
   return true;
 }
 
-function fx(kind, id = null) {
-  tr.send('fx', { kind, id, qn: state.q.n });
+function fx(kind, id = null, extra = {}) {
+  tr.send('fx', { kind, id, qn: state.q.n, ...extra });
 }
 
 let freezeTimer = null;
@@ -134,6 +134,11 @@ setInterval(broadcastState, 5000);
 // ---------- Actions ----------
 /** Joueurs inscrits ET connectés en ce moment. */
 const connectedCount = () => [...online].filter((id) => state.players[id]).length;
+/** Une partie a eu lieu : au moins une question a été posée. */
+const hasPlayed = () => state.q.n >= 1;
+/** Quelqu'un a marqué au moins un point (sinon, pas de feu d'artifice). */
+const anyScore = () => Object.values(state.players).some((p) => p.correct > 0);
+
 function canStart() {
   if (connectedCount() > 0) return true;
   toast('Il faut au moins un joueur connecté 🙂');
@@ -184,10 +189,14 @@ const actions = {
     toast('↩️ Action annulée');
   },
   podium() {
+    if (!hasPlayed()) return toast('Aucune question n’a encore été jouée 🙂');
     commit(G.setPodium(state, true), { undo: true });
-    FX.play('fanfare');
-    FX.confetti({ count: 240 });
-    fx('podium');
+    const party = anyScore();
+    if (party) {
+      FX.play('fanfare');
+      FX.confetti({ count: 240 });
+    }
+    fx('podium', null, { party });
   },
   unpodium() {
     commit(G.setPodium(state, false));
@@ -346,6 +355,7 @@ function render() {
   flipRender($('#queue'), queueHtml(state, { empty: q.phase === 'open' ? 'Personne n’a encore buzzé…' : '—' }));
   flipRender($('#board'), boardHtml(state, { online, host: true }));
   $('#undoBtn').disabled = !undoStack.length;
+  $('#endBtn').disabled = !hasPlayed() || state.podium;
 }
 
 // Chronomètre et compte à rebours
