@@ -454,3 +454,23 @@ body.tv[data-phase='lobby'] .tv-corner .qrbox { visibility: hidden; }
 /* Correctifs d'affichage */
 .overlay.join:not(.open) { display: none; }
 .logo { white-space: nowrap; }
+
+/* Pas de débordement horizontal sur mobile : les grilles ne s'élargissent jamais
+   au-delà de l'écran à cause de la largeur "naturelle" d'un champ de saisie. */
+.home-wrap, .host-main, .play-main, .sheet, .stage, .home .card, .settings, .tv-left { grid-template-columns: minmax(0, 1fr); }
+.card, .sheet { min-width: 0; }
+input { min-width: 0; max-width: 100%; }
+.join-code input { width: 0; }
+.join-code .btn { flex: none; }
+.lbl input, .code-input { width: 100%; }
+html, body { overflow-x: hidden; }
+@media (max-width: 900px) {
+  .tv-top { flex-wrap: wrap; gap: 0.8rem; padding: 0.8rem 1rem 0.4rem; }
+  .tv-phase { order: 3; flex-basis: 100%; }
+  .tv-main { padding: 0.5rem 1rem 1rem; }
+  .tv-lobby { flex-direction: column; gap: 1rem; }
+}
+@media (max-width: 360px) {
+  .host #online { display: none; }
+  .topbar { gap: 0.35rem; }
+}
